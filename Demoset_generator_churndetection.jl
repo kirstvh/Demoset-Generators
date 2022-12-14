@@ -17,44 +17,7 @@ macro bind(def, element)
 end
 
 # ╔═╡ c832d1ea-758d-4d34-a217-9f01343898e2
-using Distributions, PlutoUI, DataFrames, CSV
-
-# ╔═╡ 7565213f-d145-4fde-ba11-f749123c8b09
-begin
-	using HypertextLiteral  
-	ClickCounter(text="Click") = @htl("""
-	<span>
-	<button>$(text)</button>
-	
-	<script>
-	
-		// Select elements relative to `currentScript`
-		const span = currentScript.parentElement
-		const button = span.querySelector("button")
-	
-		// we wrapped the button in a `span` to hide its default behaviour from Pluto
-	
-		let count = 0
-	
-		button.addEventListener("click", (e) => {
-			count += 1
-	
-			// we dispatch the input event on the span, not the button, because 
-			// Pluto's `@bind` mechanism listens for events on the **first element** in the
-			// HTML output. In our case, that's the span.
-	
-			span.value = count
-			span.dispatchEvent(new CustomEvent("input"))
-			e.preventDefault()
-		})
-	
-		// Set the initial value
-		span.value = count
-	
-	</script>
-	</span>
-	""")
-end
+using Distributions, PlutoUI, DataFrames, CSV, HypertextLiteral
 
 # ╔═╡ 88e9e800-5fd0-4d84-8ef4-be5a0ffbc4f7
 TableOfContents(title="📚 Table of Contents", indent=true, depth=10, aside=true)
@@ -131,9 +94,6 @@ md"##### 🔽 Download datasets"
 ► Name training demoset: $(Child(TextField((30, 1)))) $br 
 ► Name inference demoset: $(Child(TextField((30, 1))))  """
 end)
-
-# ╔═╡ c20391e2-3a52-422f-ab67-b0fe54532ec5
-md"""►  $(@bind num_clicks ClickCounter("DOWNLOAD"))"""
 
 # ╔═╡ 352dc52b-ab3e-4056-9fe7-a866c87b1e73
 (training_name, inference_name) = names_demosets;
@@ -369,6 +329,45 @@ begin
  	df_inference
 end
 
+# ╔═╡ 7565213f-d145-4fde-ba11-f749123c8b09
+begin
+	ClickCounter(text="Click") = @htl("""
+	<span>
+	<button>$(text)</button>
+	
+	<script>
+	
+		// Select elements relative to `currentScript`
+		const span = currentScript.parentElement
+		const button = span.querySelector("button")
+	
+		// we wrapped the button in a `span` to hide its default behaviour from Pluto
+	
+		let count = 0
+	
+		button.addEventListener("click", (e) => {
+			count += 1
+	
+			// we dispatch the input event on the span, not the button, because 
+			// Pluto's `@bind` mechanism listens for events on the **first element** in the
+			// HTML output. In our case, that's the span.
+	
+			span.value = count
+			span.dispatchEvent(new CustomEvent("input"))
+			e.preventDefault()
+		})
+	
+		// Set the initial value
+		span.value = count
+	
+	</script>
+	</span>
+	""")
+end
+
+# ╔═╡ c20391e2-3a52-422f-ab67-b0fe54532ec5
+md"""►  $(@bind num_clicks ClickCounter("DOWNLOAD"))"""
+
 # ╔═╡ 340f6c2d-f314-407c-aa6e-bca1d9a4cd61
 begin
 	if num_clicks > 0
@@ -400,7 +399,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.3"
 manifest_format = "2.0"
-project_hash = "34be7b40efc898d7576835ed214fcc6cf0027f3f"
+project_hash = "10da244d5c9eb8f8e91fa439db249da5741486c0"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -976,14 +975,14 @@ version = "17.4.0+0"
 # ╟─1aec6f49-bf80-403b-9a3a-32466109b767
 # ╟─303a7447-501f-4ea7-8594-d29cd8a18dac
 # ╟─2cddbfc2-a55b-43ab-9cc5-0b8a7c5ee16d
-# ╠═02a90be0-14c1-4046-a3a5-556c27ad9480
-# ╠═c20391e2-3a52-422f-ab67-b0fe54532ec5
-# ╠═352dc52b-ab3e-4056-9fe7-a866c87b1e73
-# ╠═340f6c2d-f314-407c-aa6e-bca1d9a4cd61
+# ╟─02a90be0-14c1-4046-a3a5-556c27ad9480
+# ╟─c20391e2-3a52-422f-ab67-b0fe54532ec5
+# ╟─352dc52b-ab3e-4056-9fe7-a866c87b1e73
+# ╟─340f6c2d-f314-407c-aa6e-bca1d9a4cd61
 # ╟─36ab10dc-660e-4448-b01d-3a1841c566e2
 # ╟─e64be74a-56e1-4cd7-9c39-359b30070671
 # ╟─af17c8d7-9faa-497a-b635-a3e687e7b30b
 # ╟─4da6bb13-f7bc-40d1-b2bc-a7771555da42
-# ╠═7565213f-d145-4fde-ba11-f749123c8b09
+# ╟─7565213f-d145-4fde-ba11-f749123c8b09
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

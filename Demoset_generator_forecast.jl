@@ -15,44 +15,10 @@ macro bind(def, element)
 end
 
 # ╔═╡ c832d1ea-758d-4d34-a217-9f01343898e2
-using Distributions, Dates, PlutoUI, DataFrames, CSV, Plots
+using Distributions, Dates, PlutoUI, DataFrames, CSV, Plots, HypertextLiteral
 
-# ╔═╡ 892260fe-7405-4d64-80ef-31a02112bd9a
-begin
-	using HypertextLiteral: htl  
-	ClickCounter(text="Click") = @htl("""
-	<span>
-	<button>$(text)</button>
-	
-	<script>
-	
-		// Select elements relative to `currentScript`
-		const span = currentScript.parentElement
-		const button = span.querySelector("button")
-	
-		// we wrapped the button in a `span` to hide its default behaviour from Pluto
-	
-		let count = 0
-	
-		button.addEventListener("click", (e) => {
-			count += 1
-	
-			// we dispatch the input event on the span, not the button, because 
-			// Pluto's `@bind` mechanism listens for events on the **first element** in the
-			// HTML output. In our case, that's the span.
-	
-			span.value = count
-			span.dispatchEvent(new CustomEvent("input"))
-			e.preventDefault()
-		})
-	
-		// Set the initial value
-		span.value = count
-	
-	</script>
-	</span>
-	""")
-end
+# ╔═╡ 616427d7-5220-49e3-85a5-d67d8453bda5
+TableOfContents(title="📚 Table of Contents", indent=true, depth=10, aside=true)
 
 # ╔═╡ ae18c030-6747-11ed-203e-8feab7e8aaff
 md"# _Demoset Generator -  forecast_
@@ -184,6 +150,45 @@ md"##### 🔽 Download datasets"
 # ╔═╡ 3a6e7dc9-8a5c-47f4-9dad-0804ee9ff9b2
  md"""► Name demoset: $(@bind name_demoset confirm(TextField((30, 1))))   """
 
+# ╔═╡ 36ab10dc-660e-4448-b01d-3a1841c566e2
+md"## Functions"
+
+# ╔═╡ 892260fe-7405-4d64-80ef-31a02112bd9a
+begin
+	ClickCounter(text="Click") = @htl("""
+	<span>
+	<button>$(text)</button>
+	
+	<script>
+	
+		// Select elements relative to `currentScript`
+		const span = currentScript.parentElement
+		const button = span.querySelector("button")
+	
+		// we wrapped the button in a `span` to hide its default behaviour from Pluto
+	
+		let count = 0
+	
+		button.addEventListener("click", (e) => {
+			count += 1
+	
+			// we dispatch the input event on the span, not the button, because 
+			// Pluto's `@bind` mechanism listens for events on the **first element** in the
+			// HTML output. In our case, that's the span.
+	
+			span.value = count
+			span.dispatchEvent(new CustomEvent("input"))
+			e.preventDefault()
+		})
+	
+		// Set the initial value
+		span.value = count
+	
+	</script>
+	</span>
+	""")
+end
+
 # ╔═╡ 5f60a6b3-4d70-4fa0-9fc1-74ec4c2471bf
 md"""►  $(@bind num_clicks ClickCounter("DOWNLOAD"))"""
 
@@ -193,140 +198,6 @@ begin
 		CSV.write(string(name_demoset, ".csv"), df, delim=';');
  	end;
 end;
-
-# ╔═╡ 36ab10dc-660e-4448-b01d-3a1841c566e2
-md"## Functions"
-
-# ╔═╡ e64be74a-56e1-4cd7-9c39-359b30070671
-begin
-	import PlutoUI: combine
-	
-	function choose_distribution_types(variables::Vector)		
-		return combine() do Child	
-			distributions = [
-				md""" ► $(name): $(
-					Child(name, Select([Normal() => "Normal", Poisson() => "Poisson", Exponential() => "Exponential",  Categorical([0.5, 0.5]) => "Categorical"]))
-				)"""
-				
-				for name in variables
-			]			
-			md"""
-			$(distributions)
-			"""
-		end
-	end
-end
-
-# ╔═╡ af17c8d7-9faa-497a-b635-a3e687e7b30b
-function choose_parameters(distribution, variable)
-	
-	return combine() do Child
-
-		if distribution == Normal()
-			params_distribution = "("*string(variable)*")"*"_".*["gemiddelde", "standardafwijking", "minimum", "maximum"]
-		end
-
-		if distribution == Poisson()
-			params_distribution = "("*string(variable)*")"*"_".*["lambda", "minimum", "maximum"]
-		end
-
-		if distribution == Exponential()
-			params_distribution = "("*string(variable)*")"*"_".*["lambda", "minimum", "maximum"]
-		end
-
-		if distribution == Categorical([0.5, 0.5])
-			
-			params = [
-				md"""  🔹    **categories**_($variable)_: $(
-					Child(string(variable,"_Categories"),TextField((30, 4), "A\nB")
-)
-				)""", 				md"""  🔹  **probabilities**_($variable)_: $(
-					Child(string(variable, "_Probabilities"),TextField((30, 4), "0.5 \n0.5")
-)
-				)""" ]
-
-
-		elseif distribution == Poisson()
-			params = [
-				md"""  🔹    **lambda**_($variable)_: $(
-					Child("lambda",NumberField(0:100, default=10))
-				)""", 
-				md"""  🔹    **min**_($variable)_: $(
-					Child("minimum",NumberField(0:100, default=0))
-				)""", 
-				md"""  🔹    **max**_($variable)_: $(
-					Child("maximum",NumberField(0:100, default=100))
-				)"""
-				
-				 
-			]
-
-
-		elseif distribution == Exponential()
-			params = [
-				md"""  🔹    **lambda**_($variable)_: $(
-					Child("lambda",NumberField(0:100, default=10))
-				)""", 
-				md"""  🔹    **min**_($variable)_: $(
-					Child("minimum",NumberField(0:100, default=0))
-				)""", 
-				md"""  🔹    **max**_($variable)_: $(
-					Child("maximum",NumberField(0:100, default=100))
-				)"""
-				
-				 
-			]
-		else  #distribution == Normal()
- 			params = [
-				md"""  🔹    **mean**_($variable)_: $(
-					Child("mean",NumberField(0:100, default=1))
-				)""", 
-				md"""  🔹    **stdev**_($variable)_: $(
-					Child("stdev",NumberField(0:100, default=2))
-				)""", 
-				md"""  🔹    **min**_($variable)_: $(
-					Child("minimum",NumberField(0:100, default=0))
-				)"""
-
-				, 
-				md"""  🔹    **max**_($variable)_: $(
-					Child("maximum",NumberField(0:100, default=100))
-				)"""
-				
-				 
-			]
-		end
-				
-		md"""
-  		$(params) 
-		"""
-	end
-end
-
-# ╔═╡ 4da6bb13-f7bc-40d1-b2bc-a7771555da42
-function compose_distribution(params, distribution_type)
- 	if distribution_type == Normal()
-		distribution = Truncated(Normal(params[1], params[2]), 
-			params[3], params[4])
-	end
-
-	 if distribution_type == Poisson()
-		distribution = Truncated(Poisson(params[1]), 
-			params[2], params[3])
-	end
-
-	 if distribution_type == Exponential()
-		distribution = Truncated(Exponential(params[1]), 
-			params[2], params[3])
-	end
-
-	if distribution_type == Categorical([0.5, 0.5])
-		n_categories = length(split(params[1], "\n"))
-		probability_vector = [parse(Float64, split(params[2], "\n")[i]) for i in 1:length(split(params[2], "\n"))]
-		distribution = Categorical(probability_vector)
-	end
-	return distribution
-end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1478,6 +1349,7 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
+# ╟─616427d7-5220-49e3-85a5-d67d8453bda5
 # ╟─ae18c030-6747-11ed-203e-8feab7e8aaff
 # ╠═c832d1ea-758d-4d34-a217-9f01343898e2
 # ╟─4ef8ef32-da3c-4ba9-9907-61fe7f0eb0ac
@@ -1502,13 +1374,10 @@ version = "1.4.1+0"
 # ╟─81aa914d-401b-438f-91d1-044c4ba5ceea
 # ╟─d9368024-2cca-42fe-88f3-9e63f3c6a88e
 # ╟─2cddbfc2-a55b-43ab-9cc5-0b8a7c5ee16d
-# ╠═3a6e7dc9-8a5c-47f4-9dad-0804ee9ff9b2
-# ╠═5f60a6b3-4d70-4fa0-9fc1-74ec4c2471bf
+# ╟─3a6e7dc9-8a5c-47f4-9dad-0804ee9ff9b2
+# ╟─5f60a6b3-4d70-4fa0-9fc1-74ec4c2471bf
 # ╟─340f6c2d-f314-407c-aa6e-bca1d9a4cd61
 # ╟─36ab10dc-660e-4448-b01d-3a1841c566e2
-# ╠═892260fe-7405-4d64-80ef-31a02112bd9a
-# ╠═e64be74a-56e1-4cd7-9c39-359b30070671
-# ╠═af17c8d7-9faa-497a-b635-a3e687e7b30b
-# ╟─4da6bb13-f7bc-40d1-b2bc-a7771555da42
+# ╟─892260fe-7405-4d64-80ef-31a02112bd9a
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
