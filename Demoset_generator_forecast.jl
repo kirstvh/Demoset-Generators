@@ -75,8 +75,9 @@ md" ##### 🔽 Define variables"
 Clients = ["Client A", "Client B"]
 
 # ╔═╡ ae037bbe-76b5-4ee1-baed-d61dcdb084f1
-Product_groupes = ["Automotive", "Home appliances", "Lawn and Garden", "Electronics", 
-	"Office Supplies", "Hardware"]
+# Product_groupes = ["Automotive", "Home appliances", "Lawn and Garden", "Electronics", 
+# 	"Office Supplies", "Hardware"]
+Product_groupes = ["Hardware", "Home appliances", "Lawn and Garden"]
 
 # ╔═╡ 218dc2df-d985-44ed-a504-cb664eb7326d
 On_promotion = Poisson(4)
@@ -91,7 +92,7 @@ md" ##### 🔽 Define target"
 target = "Sales [volume]"
 
 # ╔═╡ 293807f2-d919-4cee-a596-8647ce470319
-sales_series(time, A, B) = ((sin(A*time))*(cos(time)) + 1)*B
+sales_series(time, A, B) = ((sin(0.3*A*time))*(cos(0.6*time)) + 1)*B
 
 # ╔═╡ 9a7b232e-ced9-474a-a5e8-1a65cafdd383
 md""" A: $(@bind A Slider(0.5:0.05:1))"""
@@ -106,17 +107,33 @@ plot(sales_series.(1:n_samples, A, B), title="Sales time series", label="", xlab
 md"## 📄 Generate dataset"
 
 # ╔═╡ 81aa914d-401b-438f-91d1-044c4ba5ceea
+# begin
+# 	client_vec = []
+# 	sales_series_vec = []
+# 	product_group_vec = []
+# 	time_points_vec = []
+# 	for client in Clients
+# 		for product in Product_groupes
+# 			A = rand(Uniform(0.5, 1))
+# 			B = rand(Uniform(10, 500))
+#  			append!(client_vec, repeat([client], n_samples))
+# 			append!(product_group_vec, repeat([product], n_samples))
+# 			append!(time_points_vec, time_points)
+# 			append!(sales_series_vec, ceil.(sales_series.(1:n_samples, A, B)))
+# 		end
+	
+# 	end
+# end
+
 begin
-	client_vec = []
+	client_product_vec = []
 	sales_series_vec = []
-	product_group_vec = []
-	time_points_vec = []
+ 	time_points_vec = []
 	for client in Clients
 		for product in Product_groupes
 			A = rand(Uniform(0.5, 1))
 			B = rand(Uniform(10, 500))
- 			append!(client_vec, repeat([client], n_samples))
-			append!(product_group_vec, repeat([product], n_samples))
+ 			append!(client_product_vec, repeat([string(client, " - ", product)], n_samples))
 			append!(time_points_vec, time_points)
 			append!(sales_series_vec, ceil.(sales_series.(1:n_samples, A, B)))
 		end
@@ -135,12 +152,21 @@ begin
 end;
 
 # ╔═╡ c22c41c5-3ab3-44b4-b0d8-ed083ccda10d
+# begin
+# 	df = DataFrame(Time = time_points_vec, Client = client_vec, Product_group = product_group_vec, 
+# 		on_promotion = on_promotion_vec, 
+# 		Sales = sales_series_vec)
+# 	df = sort(df, "Time")
+# 	col_names = ["Date", "Client", "Product group", "Articles on promotion", "Sales [Volume]"]
+# 	rename!(df, col_names)
+# end
+
 begin
-	df = DataFrame(Time = time_points_vec, Client = client_vec, Product_group = product_group_vec, 
+	df = DataFrame(Time = time_points_vec, Client_Product = client_product_vec, 
 		on_promotion = on_promotion_vec, 
 		Sales = sales_series_vec)
-	# df = sort(df, "Time")
-	col_names = ["Date", "Client", "Product group", "Articles on promotion", "Sales [Volume]"]
+	df = sort(df, "Time")
+	col_names = ["Date", "Client - Product group", "Articles on promotion", "Sales [Volume]"]
 	rename!(df, col_names)
 end
 
@@ -1366,7 +1392,7 @@ version = "1.4.1+0"
 # ╟─cc05179a-bdcf-4408-b8af-43b7646761b4
 # ╠═ad25661f-2213-4083-9f97-da2cf0d49ef6
 # ╠═293807f2-d919-4cee-a596-8647ce470319
-# ╟─9a7b232e-ced9-474a-a5e8-1a65cafdd383
+# ╠═9a7b232e-ced9-474a-a5e8-1a65cafdd383
 # ╟─72cd504a-f61b-403f-8b42-1d37c7d9f20a
 # ╟─4f885af1-546a-47ec-897e-1d4683986ef9
 # ╟─1ffebffc-fb30-45f8-8392-4fd164e2179c

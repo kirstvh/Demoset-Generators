@@ -23,7 +23,7 @@ using Distributions, PlutoUI, DataFrames, CSV, HypertextLiteral
 TableOfContents(title="📚 Table of Contents", indent=true, depth=10, aside=true)
 
 # ╔═╡ ae18c030-6747-11ed-203e-8feab7e8aaff
-md"# _Demoset Generator -  churn detection_
+md"# _Demoset Generator -  payment term prediction_
 
 This notebook aims to automatically generate data for demos."
 
@@ -35,7 +35,7 @@ md" ##### 🔽 Define variable names"
 
 # ╔═╡ 0e6b9c91-822e-47cd-b342-9a08fc62a690
 @bind vars_field confirm(TextField((50, 5), 
-	"Omzet [miljoen EUR]\nTijd sinds laatste contact [dagen]\nAantal contactmomenten\nRegio\nSector"))
+	"Invoice ID\nInvoice - month due\nInvoice - timing due date\nInvoice - payment term [days]\nInvoice - value\nDebtor - number of invoices\nDebtor - number of delays\nDebtor - average delay time [days]\nDebtor - total sum delayed invoice values"))
 
 # ╔═╡ a7d82311-50e1-43f5-9a6c-dc7ec7d3fcc9
 variables = [string(split(vars_field, "\n")[i]) for i in 1:length(split(vars_field, "\n"))]
@@ -58,26 +58,47 @@ md"##### 🔽 Choose distribution parameters"
 # ╔═╡ 6468f2fc-feb1-4d22-bb2b-7cf3fcc5f716
 md"##### 🔽 Choose function to calculate label"
 
+# ╔═╡ 95e291e1-8814-4496-b1ce-3a299fb30217
+variables
+
 # ╔═╡ cb9e4310-dba8-4720-bcee-bee0bbdb394f
-function churn(features::DataFrame, n_samples) 
-	threshhold = 2
-	churn = Array{String}(undef, n_samples)
+function target(features::DataFrame, n_samples) 
+	threshhold = 2.5
+	target = Array{String}(undef, n_samples)
 	for i in 1:n_samples
-		som = features[i,7]/mean(features[:,7]) + features[i,6]/mean(features[:,6]) + features[i,8]/mean(features[:,8]) - features[i,3]/mean(features[:,3]) + 0.5*randn()  
-		if som > threshhold
-			churn[i] = "NEE"
-		else
-			churn[i] = "JA"
+		som = features[i,7]/mean(features[:,7]) + features[i,6]/mean(features[:,6]) + 2*features[i,8]/mean(features[:,8]) - features[i,3]/mean(features[:,3]) + 0.05*randn() - features[i,3]/mean(features[:,3])*features[i,8]/mean(features[:,8])
+		
+		if features[i,2] == "End of the month"
+			som = 1.3*som
 		end
+		if som > threshhold
+			target[i] = "NEE"
+		else
+			target[i] = "JA"
+		end
+ 
+		
 	end
-	return churn
+	return target
 end
+
+# ╔═╡ 380c882c-f6c0-4f32-96be-f9a1da223fda
+
+
+# ╔═╡ a6239b63-8b0a-4aad-a771-53c10dab75d6
+
+
+# ╔═╡ 1139d3cb-91cc-4343-b230-4a026ec9e467
+
 
 # ╔═╡ 1ffebffc-fb30-45f8-8392-4fd164e2179c
 md"## 📄 Generate training data"
 
 # ╔═╡ 9f7fb700-18be-4ad2-940c-32ae3ff79983
 md"► Number of samples: $(@bind n_samples_train NumberField(5:5000, 100))"
+
+# ╔═╡ a009dcc5-c264-4f5c-a398-2940e480f26c
+
 
 # ╔═╡ cefc97cc-281e-4000-97f1-810e48a411b3
 md"## 📄 Generate inference data"
@@ -101,6 +122,9 @@ end)
 # ╔═╡ 36ab10dc-660e-4448-b01d-3a1841c566e2
 md"## Functions"
 
+# ╔═╡ d864907d-fb6a-4fd9-8e36-ff53b443dc1c
+Uniform(2,3)
+
 # ╔═╡ e64be74a-56e1-4cd7-9c39-359b30070671
 begin
 	import PlutoUI: combine
@@ -109,7 +133,7 @@ begin
 		return combine() do Child	
 			distributions = [
 				md""" ► $(name): $(
-					Child(name, Select([Normal() => "Normal", Poisson() => "Poisson", Exponential() => "Exponential",  Categorical([0.5, 0.5]) => "Categorical"]))
+					Child(name, Select([Uniform() => "Uniform", Normal() => "Normal", Poisson() => "Poisson", Exponential() => "Exponential",  Categorical([0.5, 0.5]) => "Categorical"]))
 				) $br"""
 				
 				for name in variables
@@ -122,13 +146,17 @@ begin
 end
 
 # ╔═╡ 0daf09d1-fd31-4d7c-8c13-36de80cca65c
-@bind distributions_types choose_distribution_types(variables)
+confirm(@bind distributions_types choose_distribution_types(variables))
 
 
 # ╔═╡ af17c8d7-9faa-497a-b635-a3e687e7b30b
 function choose_parameters(distribution, variable)
 	
 	return combine() do Child
+
+		if distribution == Uniform()
+			params_distribution = "("*string(variable)*")"*"_".*["minimum", "maximum"]
+		end
 
 		if distribution == Normal()
 			params_distribution = "("*string(variable)*")"*"_".*["gemiddelde", "standardafwijking", "minimum", "maximum"]
@@ -184,7 +212,7 @@ function choose_parameters(distribution, variable)
 				
 				 
 			]
-		else  #distribution == Normal()
+		elseif  distribution == Normal()
  			params = [
 				md"""  🔹    **mean**_($variable)_: $(
 					Child("mean",NumberField(0:100, default=1))
@@ -199,10 +227,17 @@ function choose_parameters(distribution, variable)
 				, 
 				md"""  🔹    **max**_($variable)_: $(
 					Child("maximum",NumberField(0:100, default=100))
-				)"""
-				
-				 
-			]
+				)""" ]
+
+		else
+			 params = [
+				md"""  🔹    **min**_($variable)_: $(
+					Child("minimum",NumberField(0:100, default=0))
+				)""", 
+				md"""  🔹    **max**_($variable)_: $(
+					Child("maximum",NumberField(0:100, default=100))
+				)""" ]
+			
 		end
 				
 		md"""
@@ -256,8 +291,20 @@ else
 	params_8 = nothing
 end
 
+# ╔═╡ 5ab8d5ae-5707-4415-b7df-fd75c7f0580f
+if number_of_variables > 8
+	@bind params_9 choose_parameters(distributions_types[9], variables[9])
+else
+	params_9 = nothing
+end
+
 # ╔═╡ 4da6bb13-f7bc-40d1-b2bc-a7771555da42
 function compose_distribution(params, distribution_type)
+
+	 if distribution_type == Uniform()
+		distribution = Uniform(params[1], params[2])
+	end
+	
  	if distribution_type == Normal()
 		distribution = Truncated(Normal(params[1], params[2]), 
 			params[3], params[4])
@@ -283,7 +330,7 @@ end
 
 # ╔═╡ a3afe007-fb04-4120-9ce5-f8fe70dad0f6
 begin
-	params = [params_1, params_2, params_3, params_4, params_5, params_6, params_7, params_8]
+	params = [params_1, params_2, params_3, params_4, params_5, params_6, params_7, params_8, params_9]
 	distribution_1 = compose_distribution(params[1], distributions_types[1]);
 	distribution_2 = compose_distribution(params[2], distributions_types[2]);
 	distribution_3 = compose_distribution(params[3], distributions_types[3]);
@@ -314,7 +361,14 @@ begin
 	else
 		distribution_8 = nothing
 	end
-	distributions = [distribution_1, distribution_2, distribution_3, distribution_4, distribution_5, distribution_6, distribution_7, distribution_8]
+
+	if number_of_variables > 8
+		distribution_9 = compose_distribution(params[9], distributions_types[9]);
+	else
+		distribution_9 = nothing
+	end
+	
+	distributions = [distribution_1, distribution_2, distribution_3, distribution_4, distribution_5, distribution_6, distribution_7, distribution_8, distribution_9]
  end;
 
 # ╔═╡ 8d0a81d5-96c8-4c09-8b58-6a8f4366d34a
@@ -331,17 +385,14 @@ begin
 		end
 		df_train[!, "Variable_"*string(i)] = sample
 	end
-	churn_sample = churn(df_train, n_samples_train)
+	target_sample = target(df_train, n_samples_train)
 	rename!(df_train, variables)
-	df_train[!, string(label)] = churn_sample
+	df_train[!, string(label)] = target_sample
 	df_train
 end
 
-# ╔═╡ 697dad21-a035-433b-835c-1a23f078cd01
-df_train[:,7] ./ mean(df_train[:,7])
-
 # ╔═╡ 87703b54-104f-4bd2-b50c-491373a4e6c6
-percentage_churners = sum(churn_sample .== "JA")/length(churn_sample)
+percentage_yes = sum(target_sample .== "JA")/length(target_sample)
 
 # ╔═╡ 303a7447-501f-4ea7-8594-d29cd8a18dac
 begin
@@ -1000,13 +1051,18 @@ version = "17.4.0+0"
 # ╟─edd4489d-b1e6-4536-944d-c3179b83b21b
 # ╟─0f37071c-2c84-4226-acfb-8838897b962c
 # ╟─25493b99-4951-405b-8804-bf9e0e6d6ade
+# ╟─5ab8d5ae-5707-4415-b7df-fd75c7f0580f
 # ╟─6468f2fc-feb1-4d22-bb2b-7cf3fcc5f716
+# ╠═95e291e1-8814-4496-b1ce-3a299fb30217
 # ╠═cb9e4310-dba8-4720-bcee-bee0bbdb394f
-# ╠═697dad21-a035-433b-835c-1a23f078cd01
+# ╠═380c882c-f6c0-4f32-96be-f9a1da223fda
+# ╠═a6239b63-8b0a-4aad-a771-53c10dab75d6
+# ╠═1139d3cb-91cc-4343-b230-4a026ec9e467
 # ╟─1ffebffc-fb30-45f8-8392-4fd164e2179c
 # ╟─9f7fb700-18be-4ad2-940c-32ae3ff79983
-# ╠═8d0a81d5-96c8-4c09-8b58-6a8f4366d34a
+# ╟─8d0a81d5-96c8-4c09-8b58-6a8f4366d34a
 # ╠═87703b54-104f-4bd2-b50c-491373a4e6c6
+# ╠═a009dcc5-c264-4f5c-a398-2940e480f26c
 # ╟─cefc97cc-281e-4000-97f1-810e48a411b3
 # ╟─1aec6f49-bf80-403b-9a3a-32466109b767
 # ╟─303a7447-501f-4ea7-8594-d29cd8a18dac
@@ -1016,9 +1072,10 @@ version = "17.4.0+0"
 # ╟─352dc52b-ab3e-4056-9fe7-a866c87b1e73
 # ╟─340f6c2d-f314-407c-aa6e-bca1d9a4cd61
 # ╟─36ab10dc-660e-4448-b01d-3a1841c566e2
-# ╟─e64be74a-56e1-4cd7-9c39-359b30070671
-# ╟─af17c8d7-9faa-497a-b635-a3e687e7b30b
-# ╟─4da6bb13-f7bc-40d1-b2bc-a7771555da42
+# ╠═d864907d-fb6a-4fd9-8e36-ff53b443dc1c
+# ╠═e64be74a-56e1-4cd7-9c39-359b30070671
+# ╠═af17c8d7-9faa-497a-b635-a3e687e7b30b
+# ╠═4da6bb13-f7bc-40d1-b2bc-a7771555da42
 # ╟─7565213f-d145-4fde-ba11-f749123c8b09
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
